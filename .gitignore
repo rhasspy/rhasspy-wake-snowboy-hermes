@@ -1,0 +1,8 @@
+__pycache__/
+.venv/
+.mypy_cache/
+debian/rhasspy-wake-snowboy-hermes*
+dist/
+*.egg-info/
+pyinstaller/
+snowboy-1.3.0.tar.gz
