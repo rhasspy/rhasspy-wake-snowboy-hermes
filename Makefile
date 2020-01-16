@@ -45,7 +45,7 @@ test:
 # -----------------------------------------------------------------------------
 
 docker: pyinstaller
-	docker build . -t "rhasspy/$(PACKAGE_NAME):$(version)"
+	docker build . -t "rhasspy/$(PACKAGE_NAME):$(version)" -t "rhasspy/$(PACKAGE_NAME):latest"
 
 deploy:
 	echo "$$DOCKER_PASSWORD" | docker login -u "$$DOCKER_USERNAME" --password-stdin
@@ -55,9 +55,11 @@ deploy:
 # Debian
 # -----------------------------------------------------------------------------
 
-pyinstaller:
+pyinstaller: snowboy-1.3.0.tar.gz
 	mkdir -p dist
 	pyinstaller -y --workpath pyinstaller/build --distpath pyinstaller/dist $(PYTHON_NAME).spec
+	mkdir -p pyinstaller/dist/$(PYTHON_NAME)/snowboy
+	tar -C pyinstaller/dist/$(PYTHON_NAME)/snowboy -xvf snowboy-1.3.0.tar.gz --strip-components 1 snowboy-1.3.0/resources/common.res
 	tar -C pyinstaller/dist -czf dist/$(PACKAGE_NAME)_$(version)_$(architecture).tar.gz $(SOURCE)/
 
 debian: pyinstaller
