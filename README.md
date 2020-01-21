@@ -1,5 +1,8 @@
 # Rhasspy Wake Snowboy Hermes
 
+[![Continous Integration](https://github.com/rhasspy/rhasspy-wake-snowboy-hermes/workflows/Tests/badge.svg)](https://github.com/rhasspy/rhasspy-wake-snowboy-hermes/actions)
+[![GitHub license](https://img.shields.io/github/license/rhasspy/rhasspy-wake-snowboy-hermes.svg)](https://github.com/rhasspy/rhasspy-wake-snowboy-hermes/blob/master/LICENSE)
+
 Implements `hermes/hotword` functionality from [Hermes protocol](https://docs.snips.ai/reference/hermes) using [snowboy](https://snowboy.kitt.ai).
 
 ## Running With Docker

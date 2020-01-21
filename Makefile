@@ -2,9 +2,10 @@ SHELL := bash
 PYTHON_NAME = rhasspywake_snowboy_hermes
 PACKAGE_NAME = rhasspy-wake-snowboy-hermes
 SOURCE = $(PYTHON_NAME)
-PYTHON_FILES = $(SOURCE)/*.py setup.py
+PYTHON_FILES = $(SOURCE)/*.py bin/*.py *.py
+SHELL_FILES = bin/$(PACKAGE_NAME) debian/bin/* *.sh
 
-.PHONY: check dist venv test pyinstaller debian docker deploy
+.PHONY: reformat check dist venv test pyinstaller debian docker deploy
 
 version := $(shell cat VERSION)
 architecture := $(shell bash architecture.sh)
@@ -16,12 +17,18 @@ debian_dir := debian/$(debian_package)
 # Python
 # -----------------------------------------------------------------------------
 
-check:
-	flake8 --exclude=snowboy.py $(PYTHON_FILES)
-	pylint --ignore=snowboy.py $(PYTHON_FILES)
-	mypy $(PYTHON_FILES)
-	isort $(PYTHON_FILES)
+reformat:
 	black .
+	isort $(PYTHON_FILES)
+
+check:
+	flake8 $(PYTHON_FILES)
+	pylint $(PYTHON_FILES)
+	mypy $(PYTHON_FILES)
+	black --check .
+	isort --check-only $(PYTHON_FILES)
+	bashate $(SHELL_FILES)
+	yamllint .
 	pip list --outdated
 
 venv: snowboy-1.3.0.tar.gz
