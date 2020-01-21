@@ -19,14 +19,14 @@ _LOGGER = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class SnowboyModel:
     """Settings for a single snowboy model"""
 
-    model_path: Path = attr.ib()
-    sensitivity: str = attr.ib(default="0.5")
-    audio_gain: float = attr.ib(default=1.0)
-    apply_frontend: bool = attr.ib(default=False)
+    model_path: Path
+    sensitivity: str = "0.5"
+    audio_gain: float = 1.0
+    apply_frontend: bool = False
 
 
 # -----------------------------------------------------------------------------
