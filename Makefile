@@ -4,6 +4,7 @@ PACKAGE_NAME = rhasspy-wake-snowboy-hermes
 SOURCE = $(PYTHON_NAME)
 PYTHON_FILES = $(SOURCE)/*.py bin/*.py *.py
 SHELL_FILES = bin/$(PACKAGE_NAME) debian/bin/* *.sh
+PIP_INSTALL ?= install
 
 .PHONY: reformat check dist venv test pyinstaller debian docker deploy
 
@@ -34,10 +35,10 @@ check:
 venv: snowboy-1.3.0.tar.gz
 	rm -rf .venv/
 	python3 -m venv .venv
-	.venv/bin/pip3 install wheel setuptools
-	.venv/bin/pip3 install -r requirements.txt
-	.venv/bin/pip3 install snowboy-1.3.0.tar.gz
-	.venv/bin/pip3 install -r requirements_dev.txt
+	.venv/bin/pip3 $(PIP_INSTALL) wheel setuptools
+	.venv/bin/pip3 $(PIP_INSTALL) -r requirements.txt
+	.venv/bin/pip3 $(PIP_INSTALL) snowboy-1.3.0.tar.gz
+	.venv/bin/pip3 $(PIP_INSTALL) -r requirements_dev.txt
 
 dist: sdist debian
 

@@ -10,9 +10,12 @@ from pathlib import Path
 import attr
 from rhasspyhermes.audioserver import AudioFrame
 from rhasspyhermes.base import Message
-from rhasspyhermes.wake import HotwordDetected, HotwordToggleOff, HotwordToggleOn
-
-from .messages import HotwordError
+from rhasspyhermes.wake import (
+    HotwordDetected,
+    HotwordError,
+    HotwordToggleOff,
+    HotwordToggleOn,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
