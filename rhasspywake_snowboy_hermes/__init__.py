@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class SnowboyModel:
     """Settings for a single snowboy model"""
 
