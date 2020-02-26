@@ -7,3 +7,4 @@ dist/
 .vscode/
 pyinstaller/
 download/
+snowboy-*.tar.gz
