@@ -15,10 +15,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v1
+      - name: Install dependencies on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install swig portaudio19-dev
       - name: Install dependencies on macOS
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install fakeroot dpkg coreutils
+          brew install fakeroot dpkg coreutils swig portaudio
           brew link --force gettext
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
