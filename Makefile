@@ -1,16 +1,25 @@
 SHELL := bash
-PYTHON_NAME = rhasspywake_snowboy_hermes
-PACKAGE_NAME = rhasspy-wake-snowboy-hermes
+PACKAGE_NAME = $(shell basename "$$PWD")
+PYTHON_NAME = $(shell echo "$(PACKAGE_NAME)" | sed -e 's/-//' | sed -e 's/-/_/g')
 SOURCE = $(PYTHON_NAME)
-PYTHON_FILES = $(SOURCE)/*.py bin/*.py *.py
-SHELL_FILES = bin/$(PACKAGE_NAME) debian/bin/* *.sh
+PYTHON_FILES = $(SOURCE)/*.py *.py
+SHELL_FILES = bin/* debian/bin/* *.sh
 PIP_INSTALL ?= install
-DOWNLOAD_DIR = download
 
-.PHONY: reformat check dist venv test pyinstaller debian docker deploy downloads
+.PHONY: reformat check dist venv pyinstaller debian docker deploy docker-multiarch docker-multiarch-deploy docker-multiarch-manifest docker-multiarch-manifest-init
 
 version := $(shell cat VERSION)
 architecture := $(shell bash architecture.sh)
+
+version_tag := "rhasspy/$(PACKAGE_NAME):$(version)"
+
+DOCKER_PLATFORMS = linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+
+ifneq (,$(findstring -dev,$(version)))
+	DOCKER_TAGS = -t "$(version_tag)"
+else
+	DOCKER_TAGS = -t "$(version_tag)" -t "rhasspy/$(PACKAGE_NAME):latest"
+endif
 
 # -----------------------------------------------------------------------------
 # Python
@@ -22,7 +31,7 @@ reformat:
 check:
 	scripts/check-code.sh $(PYTHON_FILES)
 
-venv: downloads
+venv:
 	scripts/create-venv.sh
 
 dist: sdist debian
@@ -30,39 +39,59 @@ dist: sdist debian
 sdist:
 	python3 setup.py sdist
 
-test:
-	echo "Skipping tests for now"
-
-test-wavs:
-	bash etc/test/test_wavs.sh
-
 # -----------------------------------------------------------------------------
 # Docker
 # -----------------------------------------------------------------------------
 
-docker: pyinstaller
+
+docker:
 	docker build . -t "rhasspy/$(PACKAGE_NAME):$(version)" -t "rhasspy/$(PACKAGE_NAME):latest"
 
+docker-multiarch:
+	scripts/build-with-docker.sh
+
+docker-multiarch-deploy:
+	docker push "$(version_tag)-amd64"
+	docker push "$(version_tag)-armhf"
+	docker push "$(version_tag)-aarch64"
+	docker push "$(version_tag)-arm32v6"
+
+docker-multiarch-manifest:
+	docker manifest push --purge "$(version_tag)"
+	docker manifest create --amend "$(version_tag)" \
+      "$(version_tag)-amd64" \
+      "$(version_tag)-armhf" \
+      "$(version_tag)-aarch64" \
+      "$(version_tag)-arm32v6"
+	docker manifest annotate "$(version_tag)" "$(version_tag)-armhf" --os linux --arch arm
+	docker manifest annotate "$(version_tag)" "$(version_tag)-aarch64" --os linux --arch arm64
+	docker manifest annotate "$(version_tag)" "$(version_tag)-arm32v6" --os linux --arch arm32v6
+	docker manifest push "$(version_tag)"
+
+docker-multiarch-manifest-init:
+	docker manifest create "$(version_tag)" \
+      "$(version_tag)-amd64" \
+      "$(version_tag)-armhf" \
+      "$(version_tag)-aarch64" \
+      "$(version_tag)-arm32v6"
+	docker manifest annotate "$(version_tag)" "$(version_tag)-armhf" --os linux --arch arm
+	docker manifest annotate "$(version_tag)" "$(version_tag)-aarch64" --os linux --arch arm64
+	docker manifest annotate "$(version_tag)" "$(version_tag)-arm32v6" --os linux --arch arm32v6
+	docker manifest push "$(version_tag)"
+
+docker-pyinstaller: pyinstaller
+	docker build . -f Dockerfile.pyinstaller -t "rhasspy/$(PACKAGE_NAME):$(version)" -t "rhasspy/$(PACKAGE_NAME):latest"
+
 deploy:
-	echo "$$DOCKER_PASSWORD" | docker login -u "$$DOCKER_USERNAME" --password-stdin
-	docker push "rhasspy/$(PACKAGE_NAME):$(version)"
+	docker login --username rhasspy --password "$$DOCKER_PASSWORD"
+	docker buildx build . --platform $(DOCKER_PLATFORMS) --push $(DOCKER_TAGS)
 
 # -----------------------------------------------------------------------------
 # Debian
 # -----------------------------------------------------------------------------
 
-pyinstaller: downloads
+pyinstaller:
 	scripts/build-pyinstaller.sh "${architecture}" "${version}"
 
-debian: downloads
-	scripts/build-debian.sh "${architecture}" "${version}"
-
-# -----------------------------------------------------------------------------
-# Download
-# -----------------------------------------------------------------------------
-
-downloads: $(DOWNLOAD_DIR)/snowboy-1.3.0.tar.gz
-
-$(DOWNLOAD_DIR)/snowboy-1.3.0.tar.gz:
-	mkdir -p "$(DOWNLOAD_DIR)"
-	curl -sSfL -o $@ 'https://github.com/Kitt-AI/snowboy/archive/v1.3.0.tar.gz'
+debian:
+	scripts/build-debian.sh "$(architecture)" "$(version)"
