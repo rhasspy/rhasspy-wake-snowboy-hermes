@@ -1,5 +1,6 @@
 """Hermes MQTT server for Rhasspy wakeword with snowboy"""
 import io
+import itertools
 import json
 import logging
 import subprocess
@@ -15,6 +16,9 @@ from rhasspyhermes.wake import (
     HotwordError,
     HotwordToggleOff,
     HotwordToggleOn,
+    GetHotwords,
+    Hotwords,
+    Hotword,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,6 +47,7 @@ class WakeHermesMqtt:
         client,
         models: typing.List[SnowboyModel],
         wakeword_ids: typing.List[str],
+        model_dir: typing.Optional[Path] = None,
         siteIds: typing.Optional[typing.List[str]] = None,
         enabled: bool = True,
         sample_rate: int = 16000,
@@ -53,6 +58,8 @@ class WakeHermesMqtt:
         self.client = client
         self.models = models
         self.wakeword_ids = wakeword_ids
+        self.model_dir = model_dir
+
         self.siteIds = siteIds or []
         self.enabled = enabled
 
@@ -162,12 +169,57 @@ class WakeHermesMqtt:
             _LOGGER.exception("handle_detection")
             return HotwordError(error=str(e), context=str(model_index), siteId=siteId)
 
+    def handle_get_hotwords(
+        self, get_hotwords: GetHotwords
+    ) -> typing.Union[Hotwords, HotwordError]:
+        """Report available hotwords"""
+        try:
+            if self.model_dir:
+                # Add all models from model dir
+                model_paths = list(
+                    itertools.chain(
+                        self.model_dir.glob("*.umdl"), self.model_dir.glob("*.pmdl")
+                    )
+                )
+            else:
+                # Add current model(s) only
+                model_paths = [Path(model.model_path) for model in self.models]
+
+            hotword_models: typing.List[Hotword] = []
+            for model_path in model_paths:
+                model_words = " ".join(model_path.with_suffix("").name.split("_"))
+                model_type = "universal" if model_path.suffix == ".umdl" else "personal"
+
+                hotword_models.append(
+                    Hotword(
+                        modelId=model_path.name,
+                        modelWords=model_words,
+                        modelType=model_type,
+                    )
+                )
+
+            return Hotwords(
+                models={m.modelId: m for m in hotword_models},
+                id=get_hotwords.id,
+                siteId=get_hotwords.siteId,
+            )
+
+        except Exception as e:
+            _LOGGER.exception("handle_get_hotwords")
+            return HotwordError(
+                error=str(e), context=str(get_hotwords), siteId=get_hotwords.siteId
+            )
+
     # -------------------------------------------------------------------------
 
     def on_connect(self, client, userdata, flags, rc):
         """Connected to MQTT broker."""
         try:
-            topics = [HotwordToggleOn.topic(), HotwordToggleOff.topic()]
+            topics = [
+                HotwordToggleOn.topic(),
+                HotwordToggleOff.topic(),
+                GetHotwords.topic(),
+            ]
 
             if self.audioframe_topics:
                 # Specific siteIds
@@ -200,13 +252,8 @@ class WakeHermesMqtt:
                 if self._check_siteId(json_payload):
                     self.enabled = False
                     _LOGGER.debug("Disabled")
-
-            if not self.enabled:
-                # Disabled
-                return
-
-            # Handle audio frames
-            if AudioFrame.is_topic(msg.topic):
+            elif self.enabled and AudioFrame.is_topic(msg.topic):
+                # Handle audio frames
                 if (not self.audioframe_topics) or (
                     msg.topic in self.audioframe_topics
                 ):
@@ -223,6 +270,13 @@ class WakeHermesMqtt:
                             self.publish(result, wakewordId=wakewordId)
                         else:
                             self.publish(result)
+            elif msg.topic == GetHotwords.topic():
+                json_payload = json.loads(msg.payload or "{}")
+                if self._check_siteId(json_payload):
+                    self.publish(
+                        self.handle_get_hotwords(Hotwords.from_dict(json_payload))
+                    )
+
         except Exception:
             _LOGGER.exception("on_message")
 

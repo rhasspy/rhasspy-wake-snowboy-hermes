@@ -26,6 +26,7 @@ def main():
         nargs="+",
         help="Snowboy model settings (model, sensitivity, audio_gain, apply_frontend)",
     )
+    parser.add_argument("--model-dir", help="Directory with snowboy models")
     parser.add_argument(
         "--wakewordId",
         action="append",
@@ -58,11 +59,20 @@ def main():
     _LOGGER.debug(args)
 
     try:
+        if args.model_dir:
+            args.model_dir = Path(args.model_dir)
+
         # Load model settings
         models: typing.List[SnowboyModel] = []
 
         for model_settings in args.model:
-            model = SnowboyModel(model_path=Path(model_settings[0]))
+            model_path = Path(model_settings[0])
+
+            if args.model_dir and not model_path.is_file():
+                # Resolve relative to model directory
+                model_path = args.model_dir / model_path.name
+
+            model = SnowboyModel(model_path=model_path)
 
             if len(model_settings) > 1:
                 model.sensitivity = model_settings[1]
@@ -103,7 +113,9 @@ def main():
 
         # Listen for messages
         client = mqtt.Client()
-        hermes = WakeHermesMqtt(client, models, wakeword_ids, siteIds=args.siteId)
+        hermes = WakeHermesMqtt(
+            client, models, wakeword_ids, model_dir=args.model_dir, siteIds=args.siteId
+        )
 
         hermes.load_detectors()
 
