@@ -28,7 +28,14 @@ source "${venv}/bin/activate"
 echo "Installing Python dependencies"
 pip3 ${PIP_INSTALL} --upgrade pip
 pip3 ${PIP_INSTALL} wheel setuptools
-pip3 ${PIP_INSTALL} "${download}/snowboy-1.3.0.tar.gz"
+
+# Install snowboy
+snowboy_file="${download}/snowboy-1.3.0.tar.gz"
+if [[ ! -s "${snowboy_file}" ]]; then
+    wget -O "${snowboy_file}" 'https://github.com/Kitt-AI/snowboy/archive/v1.3.0.tar.gz'
+fi
+
+pip3 ${PIP_INSTALL} "${snowboy_file}"
 
 # Install local Rhasspy dependencies if available
 grep '^rhasspy-' "${src_dir}/requirements.txt" | \
