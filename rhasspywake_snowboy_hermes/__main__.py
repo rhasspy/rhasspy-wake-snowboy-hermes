@@ -13,6 +13,7 @@ import paho.mqtt.client as mqtt
 
 from . import SnowboyModel, WakeHermesMqtt
 
+_DIR = Path(__file__).parent
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -61,6 +62,9 @@ def main():
     try:
         if args.model_dir:
             args.model_dir = Path(args.model_dir)
+        else:
+            # Use embedded models
+            args.model_dir = _DIR / "models"
 
         # Load model settings
         models: typing.List[SnowboyModel] = []
