@@ -47,7 +47,7 @@ class WakeHermesMqtt:
         client,
         models: typing.List[SnowboyModel],
         wakeword_ids: typing.List[str],
-        model_dir: typing.Optional[Path] = None,
+        model_dirs: typing.Optional[typing.List[Path]] = None,
         siteIds: typing.Optional[typing.List[str]] = None,
         enabled: bool = True,
         sample_rate: int = 16000,
@@ -58,7 +58,7 @@ class WakeHermesMqtt:
         self.client = client
         self.models = models
         self.wakeword_ids = wakeword_ids
-        self.model_dir = model_dir
+        self.model_dirs = model_dirs or []
 
         self.siteIds = siteIds or []
         self.enabled = enabled
@@ -105,7 +105,7 @@ class WakeHermesMqtt:
             detector.ApplyFrontend(model.apply_frontend)
 
             self.detectors.append(detector)
-            self.model_ids = model.model_path.stem
+            self.model_ids.append(model.model_path.stem)
 
     # -------------------------------------------------------------------------
 
@@ -174,13 +174,19 @@ class WakeHermesMqtt:
     ) -> typing.Union[Hotwords, HotwordError]:
         """Report available hotwords"""
         try:
-            if self.model_dir:
-                # Add all models from model dir
-                model_paths = list(
-                    itertools.chain(
-                        self.model_dir.glob("*.umdl"), self.model_dir.glob("*.pmdl")
-                    )
-                )
+            if self.model_dirs:
+                # Add all models from model dirs
+                model_paths = []
+                for model_dir in self.model_dirs:
+                    if not model_dir.is_dir():
+                        _LOGGER.warning("Model directory missing: %s", str(model_dir))
+                        continue
+
+                    for model_file in model_dir.iterdir():
+                        if model_file.is_file() and (
+                            model_file.suffix in [".umdl", ".pmdl"]
+                        ):
+                            model_paths.append(model_file)
             else:
                 # Add current model(s) only
                 model_paths = [Path(model.model_path) for model in self.models]

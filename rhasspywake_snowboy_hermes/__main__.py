@@ -27,7 +27,12 @@ def main():
         nargs="+",
         help="Snowboy model settings (model, sensitivity, audio_gain, apply_frontend)",
     )
-    parser.add_argument("--model-dir", help="Directory with snowboy models")
+    parser.add_argument(
+        "--model-dir",
+        action="append",
+        default=[],
+        help="Directories with snowboy models",
+    )
     parser.add_argument(
         "--wakewordId",
         action="append",
@@ -61,10 +66,10 @@ def main():
 
     try:
         if args.model_dir:
-            args.model_dir = Path(args.model_dir)
-        else:
-            # Use embedded models
-            args.model_dir = _DIR / "models"
+            args.model_dir = [Path(d) for d in args.model_dir]
+
+        # Use embedded models too
+        args.model_dir.append(_DIR / "models")
 
         # Load model settings
         models: typing.List[SnowboyModel] = []
@@ -72,10 +77,15 @@ def main():
         for model_settings in args.model:
             model_path = Path(model_settings[0])
 
-            if args.model_dir and not model_path.is_file():
-                # Resolve relative to model directory
-                model_path = args.model_dir / model_path.name
+            if not model_path.is_file():
+                # Resolve relative to model directories
+                for model_dir in args.model_dir:
+                    maybe_path = model_dir / model_path.name
+                    if maybe_path.is_file():
+                        model_path = maybe_path
+                        break
 
+            _LOGGER.debug("Loading model from %s", str(model_path))
             model = SnowboyModel(model_path=model_path)
 
             if len(model_settings) > 1:
@@ -118,7 +128,7 @@ def main():
         # Listen for messages
         client = mqtt.Client()
         hermes = WakeHermesMqtt(
-            client, models, wakeword_ids, model_dir=args.model_dir, siteIds=args.siteId
+            client, models, wakeword_ids, model_dirs=args.model_dir, siteIds=args.siteId
         )
 
         hermes.load_detectors()
