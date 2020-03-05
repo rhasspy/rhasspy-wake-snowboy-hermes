@@ -1,6 +1,5 @@
 """Hermes MQTT server for Rhasspy wakeword with snowboy"""
 import io
-import itertools
 import json
 import logging
 import subprocess
