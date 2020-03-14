@@ -318,9 +318,9 @@ class WakeHermesMqtt:
                     self.publish(
                         self.handle_get_hotwords(Hotwords.from_dict(json_payload))
                     )
-
         except Exception:
             _LOGGER.exception("on_message")
+            _LOGGER.error("%s %s", msg.topic, msg.payload)
 
     def publish(self, message: Message, **topic_args):
         """Publish a Hermes message to MQTT."""
