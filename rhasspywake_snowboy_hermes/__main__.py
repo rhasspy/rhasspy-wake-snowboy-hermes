@@ -1,5 +1,6 @@
 """Hermes MQTT service for Rhasspy wakeword with snowboy"""
 import argparse
+import asyncio
 import itertools
 import json
 import logging
@@ -14,7 +15,9 @@ import paho.mqtt.client as mqtt
 from . import SnowboyModel, WakeHermesMqtt
 
 _DIR = Path(__file__).parent
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger("rhasspywake_snowboy_hermes")
+
+# -----------------------------------------------------------------------------
 
 
 def main():
@@ -133,6 +136,8 @@ def main():
 
             return
 
+        loop = asyncio.get_event_loop()
+
         # Listen for messages
         client = mqtt.Client()
         hermes = WakeHermesMqtt(
@@ -142,27 +147,18 @@ def main():
             model_dirs=args.model_dir,
             udp_audio_port=args.udp_audio_port,
             siteIds=args.siteId,
+            loop=loop,
         )
 
         hermes.load_detectors()
 
-        def on_disconnect(client, userdata, flags, rc):
-            try:
-                # Automatically reconnect
-                _LOGGER.info("Disconnected. Trying to reconnect...")
-                client.reconnect()
-            except Exception:
-                logging.exception("on_disconnect")
-
-        # Connect
-        client.on_connect = hermes.on_connect
-        client.on_disconnect = on_disconnect
-        client.on_message = hermes.on_message
-
         _LOGGER.debug("Connecting to %s:%s", args.host, args.port)
         client.connect(args.host, args.port)
 
-        client.loop_forever()
+        client.loop_start()
+
+        # Run event loop
+        hermes.loop.run_forever()
     except KeyboardInterrupt:
         pass
     finally:
