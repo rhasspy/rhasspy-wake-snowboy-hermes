@@ -5,9 +5,9 @@ import queue
 import socket
 import threading
 import typing
+from dataclasses import dataclass
 from pathlib import Path
 
-import attr
 from rhasspyhermes.audioserver import AudioFrame
 from rhasspyhermes.base import Message
 from rhasspyhermes.client import GeneratorType, HermesClient, TopicArgs
@@ -27,7 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 
 
-@attr.s(auto_attribs=True, slots=True)
+@dataclass
 class SnowboyModel:
     """Settings for a single snowboy model"""
 

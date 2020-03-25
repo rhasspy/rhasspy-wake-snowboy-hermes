@@ -1,6 +1,7 @@
 """Hermes MQTT service for Rhasspy wakeword with snowboy"""
 import argparse
 import asyncio
+import dataclasses
 import itertools
 import json
 import logging
@@ -9,7 +10,6 @@ import sys
 import typing
 from pathlib import Path
 
-import attr
 import paho.mqtt.client as mqtt
 import rhasspyhermes.cli as hermes_cli
 
@@ -111,7 +111,7 @@ def main():
 
             # Print results as JSON
             for result in hermes.handle_audio_frame(wav_bytes):
-                result_dict = attr.asdict(result)
+                result_dict = dataclasses.asdict(result)
                 json.dump(result_dict, sys.stdout)
 
             return

@@ -27,7 +27,7 @@ source "${venv}/bin/activate"
 # Install Python dependencies
 echo "Installing Python dependencies"
 pip3 ${PIP_INSTALL} --upgrade pip
-pip3 ${PIP_INSTALL} wheel setuptools
+pip3 ${PIP_INSTALL} --upgrade wheel setuptools
 
 # Install snowboy
 snowboy_file="${download}/snowboy-1.3.0.tar.gz"
