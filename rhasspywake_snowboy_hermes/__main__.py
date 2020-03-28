@@ -40,7 +40,7 @@ def main():
     parser.add_argument(
         "--wakewordId",
         action="append",
-        help="Wakeword IDs of each keyword (default: default)",
+        help="Wakeword IDs of each keyword (default: use file name)",
     )
     parser.add_argument(
         "--stdin-audio", action="store_true", help="Read WAV audio from stdin"
@@ -93,7 +93,7 @@ def main():
         wakeword_ids = [
             kn[1]
             for kn in itertools.zip_longest(
-                args.model, args.wakewordId or [], fillvalue="default"
+                args.model, args.wakewordId or [], fillvalue=""
             )
         ]
 
