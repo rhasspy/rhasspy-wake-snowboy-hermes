@@ -256,13 +256,13 @@ class WakeHermesMqtt(HermesClient):
                                 "Wake word detected: %s (siteId=%s)", wakewordId, siteId
                             )
 
-                            asyncio.ensure_future(
+                            asyncio.run_coroutine_threadsafe(
                                 self.publish_all(
                                     self.handle_detection(
                                         detector_index, wakewordId, siteId=siteId
                                     )
                                 ),
-                                loop=self.loop,
+                                self.loop,
                             )
         except Exception:
             _LOGGER.exception("detection_thread_proc")
