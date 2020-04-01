@@ -79,6 +79,7 @@ class WakeHermesMqtt(HermesClient):
         self.model_dirs = model_dirs or []
 
         self.enabled = enabled
+        self.disabled_reasons: typing.Set[str] = set()
 
         # Required audio format
         self.sample_rate = sample_rate
@@ -295,11 +296,16 @@ class WakeHermesMqtt(HermesClient):
         """Received message from MQTT broker."""
         # Check enable/disable messages
         if isinstance(message, HotwordToggleOn):
-            self.enabled = True
-            self.first_audio = True
-            _LOGGER.debug("Enabled")
+            self.disabled_reasons.discard(message.reason)
+            if self.disabled_reasons:
+                _LOGGER.debug("Still disabled: %s", self.disabled_reasons)
+            else:
+                self.enabled = True
+                self.first_audio = True
+                _LOGGER.debug("Enabled")
         elif isinstance(message, HotwordToggleOff):
             self.enabled = False
+            self.disabled_reasons.add(message.reason)
             _LOGGER.debug("Disabled")
         elif isinstance(message, AudioFrame):
             if self.enabled:
