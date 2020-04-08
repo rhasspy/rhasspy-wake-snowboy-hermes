@@ -38,7 +38,7 @@ def main():
         help="Directories with snowboy models",
     )
     parser.add_argument(
-        "--wakewordId",
+        "--wakeword-id",
         action="append",
         help="Wakeword IDs of each keyword (default: use file name)",
     )
@@ -91,7 +91,9 @@ def main():
 
     wakeword_ids = [
         kn[1]
-        for kn in itertools.zip_longest(args.model, args.wakewordId or [], fillvalue="")
+        for kn in itertools.zip_longest(
+            args.model, args.wakeword_id or [], fillvalue=""
+        )
     ]
 
     if args.stdin_audio:
@@ -121,7 +123,7 @@ def main():
         wakeword_ids,
         model_dirs=args.model_dir,
         udp_audio_port=args.udp_audio_port,
-        siteIds=args.siteId,
+        site_ids=args.site_id,
     )
 
     hermes.load_detectors()
