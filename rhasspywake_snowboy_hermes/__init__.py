@@ -248,10 +248,14 @@ class WakeHermesMqtt(HermesClient):
                                 wakeword_id = ""
 
                             if not wakeword_id:
-                                # Use file name
-                                wakeword_id = self.models[
-                                    detector_index
-                                ].model_path.stem
+                                if detector_index < len(self.models):
+                                    # Use file name
+                                    wakeword_id = self.models[
+                                        detector_index
+                                    ].model_path.stem
+                                else:
+                                    # Fall back to default
+                                    wakeword_id = "default"
 
                             _LOGGER.debug(
                                 "Wake word detected: %s (site_id=%s)",
