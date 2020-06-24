@@ -23,7 +23,7 @@ _LOGGER = logging.getLogger("rhasspywake_snowboy_hermes")
 
 def main():
     """Main method."""
-    parser = argparse.ArgumentParser(prog="rhasspywake_snowboy_hermes")
+    parser = argparse.ArgumentParser(prog="rhasspy-wake-snowboy-hermes")
     parser.add_argument(
         "--model",
         required=True,

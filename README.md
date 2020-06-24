@@ -5,70 +5,77 @@
 
 Implements `hermes/hotword` functionality from [Hermes protocol](https://docs.snips.ai/reference/hermes) using [snowboy](https://snowboy.kitt.ai).
 
-## Running With Docker
+## Requirements
+
+* Python 3.7
+* [snowboy](https://snowboy.kitt.ai)
+
+## Installation
 
 ```bash
-docker run -it rhasspy/rhasspy-wake-snowboy-hermes:<VERSION> <ARGS>
+$ git clone https://github.com/rhasspy/rhasspy-wake-snowboy-hermes
+$ cd rhasspy-wake-snowboy-hermes
+$ ./configure
+$ make
+$ make install
 ```
 
-## Building From Source
-
-Clone the repository and create the virtual environment:
+## Running
 
 ```bash
-git clone https://github.com/rhasspy/rhasspy-wake-snowboy-hermes.git
-cd rhasspy-wake-snowboy-hermes
-make venv
+$ bin/rhasspy-wake-snowboy-hermes <ARGS>
 ```
-
-Run the `bin/rhasspy-wake-snowboy-hermes` script to access the command-line interface:
-
-```bash
-bin/rhasspy-wake-snowboy-hermes --help
-```
-
-## Building the Debian Package
-
-Follow the instructions to build from source, then run:
-
-```bash
-source .venv/bin/activate
-make debian
-```
-
-If successful, you'll find a `.deb` file in the `dist` directory that can be installed with `apt`.
-
-## Building the Docker Image
-
-Follow the instructions to build from source, then run:
-
-```bash
-source .venv/bin/activate
-make docker
-```
-
-This will create a Docker image tagged `rhasspy/rhasspy-wake-snowboy-hermes:<VERSION>` where `VERSION` comes from the file of the same name in the source root directory.
-
-NOTE: If you add things to the Docker image, make sure to whitelist them in `.dockerignore`.
 
 ## Command-Line Options
 
 ```
-usage: rhasspywake_snowboy_hermes [-h] --model MODEL [MODEL ...]
-                                  [--wakewordId WAKEWORDID] [--stdin-audio]
-                                  [--host HOST] [--port PORT]
-                                  [--siteId SITEID] [--debug]
+usage: rhasspy-wake-snowboy-hermes [-h] --model MODEL [MODEL ...]
+                                   [--model-dir MODEL_DIR]
+                                   [--wakeword-id WAKEWORD_ID] [--stdin-audio]
+                                   [--udp-audio UDP_AUDIO UDP_AUDIO UDP_AUDIO]
+                                   [--host HOST] [--port PORT]
+                                   [--username USERNAME] [--password PASSWORD]
+                                   [--tls] [--tls-ca-certs TLS_CA_CERTS]
+                                   [--tls-certfile TLS_CERTFILE]
+                                   [--tls-keyfile TLS_KEYFILE]
+                                   [--tls-cert-reqs {CERT_REQUIRED,CERT_OPTIONAL,CERT_NONE}]
+                                   [--tls-version TLS_VERSION]
+                                   [--tls-ciphers TLS_CIPHERS]
+                                   [--site-id SITE_ID] [--debug]
+                                   [--log-format LOG_FORMAT]
 
 optional arguments:
   -h, --help            show this help message and exit
   --model MODEL [MODEL ...]
                         Snowboy model settings (model, sensitivity,
                         audio_gain, apply_frontend)
-  --wakewordId WAKEWORDID
-                        Wakeword IDs of each keyword (default: default)
+  --model-dir MODEL_DIR
+                        Directories with snowboy models
+  --wakeword-id WAKEWORD_ID
+                        Wakeword IDs of each keyword (default: use file name)
   --stdin-audio         Read WAV audio from stdin
+  --udp-audio UDP_AUDIO UDP_AUDIO UDP_AUDIO
+                        Host/port/siteId for UDP audio input
   --host HOST           MQTT host (default: localhost)
   --port PORT           MQTT port (default: 1883)
-  --siteId SITEID       Hermes siteId(s) to listen for (default: all)
+  --username USERNAME   MQTT username
+  --password PASSWORD   MQTT password
+  --tls                 Enable MQTT TLS
+  --tls-ca-certs TLS_CA_CERTS
+                        MQTT TLS Certificate Authority certificate files
+  --tls-certfile TLS_CERTFILE
+                        MQTT TLS certificate file (PEM)
+  --tls-keyfile TLS_KEYFILE
+                        MQTT TLS key file (PEM)
+  --tls-cert-reqs {CERT_REQUIRED,CERT_OPTIONAL,CERT_NONE}
+                        MQTT TLS certificate requirements (default:
+                        CERT_REQUIRED)
+  --tls-version TLS_VERSION
+                        MQTT TLS version (default: highest)
+  --tls-ciphers TLS_CIPHERS
+                        MQTT TLS ciphers to use
+  --site-id SITE_ID     Hermes site id(s) to listen for (default: all)
   --debug               Print DEBUG messages to the console
+  --log-format LOG_FORMAT
+                        Python logger format
 ```
