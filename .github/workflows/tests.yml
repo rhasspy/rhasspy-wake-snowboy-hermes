@@ -19,7 +19,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install swig portaudio19-dev
+          sudo apt-get install python3-venv swig portaudio19-dev libatlas-base-dev
       - name: Install dependencies on macOS
         if: startsWith(matrix.os, 'macos')
         run: |
