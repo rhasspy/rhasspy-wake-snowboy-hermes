@@ -114,7 +114,7 @@ def main():
         # Print results as JSON
         for result in hermes.handle_audio_frame(wav_bytes):
             result_dict = dataclasses.asdict(result)
-            json.dump(result_dict, sys.stdout)
+            json.dump(result_dict, sys.stdout, ensure_ascii=False)
 
         return
 

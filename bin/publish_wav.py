@@ -69,7 +69,7 @@ def main():
                 detected_json = json.loads(msg.payload.strip())
 
                 # Print to console
-                json.dump(detected_json, sys.stdout)
+                json.dump(detected_json, sys.stdout, ensure_ascii=False)
                 print("", file=sys.stdout)
                 sys.stdout.flush()
 
