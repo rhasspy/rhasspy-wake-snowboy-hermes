@@ -151,12 +151,16 @@ class WakeHermesMqtt(HermesClient):
         """Handle a successful hotword detection"""
         try:
             assert len(self.model_ids) > model_index, f"Missing {model_index} in models"
+            sensitivity = 0.5
+
+            if model_index < len(self.models):
+                sensitivity = self.models[model_index].float_sensitivity()
 
             yield (
                 HotwordDetected(
                     site_id=site_id,
                     model_id=self.model_ids[model_index],
-                    current_sensitivity=self.models[model_index].float_sensitivity(),
+                    current_sensitivity=sensitivity,
                     model_version="",
                     model_type="personal",
                 ),

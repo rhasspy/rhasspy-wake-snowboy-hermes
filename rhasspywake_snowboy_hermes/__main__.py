@@ -11,6 +11,7 @@ import typing
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
+
 import rhasspyhermes.cli as hermes_cli
 
 from . import SnowboyModel, WakeHermesMqtt
