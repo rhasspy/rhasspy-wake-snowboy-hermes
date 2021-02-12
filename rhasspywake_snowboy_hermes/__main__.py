@@ -52,6 +52,7 @@ def main():
         action="append",
         help="Host/port/siteId for UDP audio input",
     )
+    parser.add_argument("--lang", help="Set lang in hotword detected message")
 
     hermes_cli.add_hermes_args(parser)
     args = parser.parse_args()
@@ -134,6 +135,7 @@ def main():
         model_dirs=args.model_dir,
         udp_audio=udp_audio,
         site_ids=args.site_id,
+        lang=args.lang,
     )
 
     hermes.load_detectors()

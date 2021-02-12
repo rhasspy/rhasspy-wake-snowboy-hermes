@@ -63,6 +63,7 @@ class WakeHermesMqtt(HermesClient):
         chunk_size: int = 960,
         udp_audio: typing.Optional[typing.List[typing.Tuple[str, int, str]]] = None,
         udp_chunk_size: int = 2048,
+        lang: typing.Optional[str] = None,
     ):
         super().__init__(
             "rhasspywake_snowboy_hermes",
@@ -94,6 +95,8 @@ class WakeHermesMqtt(HermesClient):
 
         self.first_audio: bool = True
         self.audio_buffer = bytes()
+
+        self.lang = lang
 
         # Load detector
         self.detectors: typing.List[typing.Any] = []
@@ -163,6 +166,7 @@ class WakeHermesMqtt(HermesClient):
                     current_sensitivity=sensitivity,
                     model_version="",
                     model_type="personal",
+                    lang=self.lang,
                 ),
                 {"wakeword_id": wakeword_id},
             )
