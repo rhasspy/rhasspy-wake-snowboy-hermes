@@ -106,7 +106,8 @@ def main():
         client = None
         hermes = WakeHermesMqtt(client, models, wakeword_ids)
 
-        hermes.load_detectors()
+        for site_id in args.site_id:
+            hermes.load_detectors(site_id)
 
         if os.isatty(sys.stdin.fileno()):
             print("Reading WAV data from stdin...", file=sys.stderr)

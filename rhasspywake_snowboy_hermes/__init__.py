@@ -87,23 +87,24 @@ class WakeHermesMqtt(HermesClient):
         self.sample_rate = sample_rate
         self.sample_width = sample_width
         self.channels = channels
-
         self.chunk_size = chunk_size
 
-        # Queue of WAV audio chunks to process (plus site_id)
-        self.wav_queue: queue.Queue = queue.Queue()
-
-        self.first_audio: bool = True
-        self.audio_buffer = bytes()
+        self.audio_buffers = dict()
+        self.first_audio = dict()
+        self.wav_queues = dict()
+        self.detectors = dict()
+        self.model_ids = dict()
+        for site_id in self.site_ids:
+          self.audio_buffers[site_id] = bytes()
+          self.first_audio[site_id] = True
+          self.wav_queues[site_id] = queue.Queue()
+          # Load detector
+          self.detectors[site_id] = []
+          self.model_ids[site_id] = []
+          # Start threads
+          threading.Thread(target=self.detection_thread_proc, daemon=True, args=(site_id,)).start()
 
         self.lang = lang
-
-        # Load detector
-        self.detectors: typing.List[typing.Any] = []
-        self.model_ids: typing.List[str] = []
-
-        # Start threads
-        threading.Thread(target=self.detection_thread_proc, daemon=True).start()
 
         # Listen for raw audio on UDP too
         self.udp_chunk_size = udp_chunk_size
@@ -118,12 +119,12 @@ class WakeHermesMqtt(HermesClient):
 
     # -------------------------------------------------------------------------
 
-    def load_detectors(self):
+    def load_detectors(self, site_id):
         """Load snowboy detectors from models"""
         from snowboy import snowboydecoder, snowboydetect
 
-        self.model_ids = []
-        self.detectors = []
+        self.model_ids[site_id] = []
+        self.detectors[site_id] = []
 
         for model in self.models:
             assert model.model_path.is_file(), f"Missing {model.model_path}"
@@ -137,14 +138,14 @@ class WakeHermesMqtt(HermesClient):
             detector.SetAudioGain(model.audio_gain)
             detector.ApplyFrontend(model.apply_frontend)
 
-            self.detectors.append(detector)
-            self.model_ids.append(model.model_path.stem)
+            self.detectors[site_id].append(detector)
+            self.model_ids[site_id].append(model.model_path.stem)
 
     # -------------------------------------------------------------------------
 
     async def handle_audio_frame(self, wav_bytes: bytes, site_id: str = "default"):
         """Process a single audio frame"""
-        self.wav_queue.put((wav_bytes, site_id))
+        self.wav_queues[site_id].put((wav_bytes, site_id))
 
     async def handle_detection(
         self, model_index: int, wakeword_id: str, site_id: str = "default"
@@ -153,7 +154,7 @@ class WakeHermesMqtt(HermesClient):
     ]:
         """Handle a successful hotword detection"""
         try:
-            assert len(self.model_ids) > model_index, f"Missing {model_index} in models"
+            assert len(self.model_ids[site_id]) > model_index, f"Missing {model_index} in models"
             sensitivity = 0.5
 
             if model_index < len(self.models):
@@ -162,7 +163,7 @@ class WakeHermesMqtt(HermesClient):
             yield (
                 HotwordDetected(
                     site_id=site_id,
-                    model_id=self.model_ids[model_index],
+                    model_id=self.model_ids[site_id][model_index],
                     current_sensitivity=sensitivity,
                     model_version="",
                     model_type="personal",
@@ -219,28 +220,31 @@ class WakeHermesMqtt(HermesClient):
                 error=str(e), context=str(get_hotwords), site_id=get_hotwords.site_id
             )
 
-    def detection_thread_proc(self):
+    def detection_thread_proc(self, site_id):
         """Handle WAV audio chunks."""
         try:
             while True:
-                wav_bytes, site_id = self.wav_queue.get()
+                wav_bytes, site_id = self.wav_queues[site_id].get()
+                if self.first_audio[site_id]:
+                    _LOGGER.debug("Receiving audio %s", site_id)
+                    self.first_audio[site_id] = False
 
-                if not self.detectors:
-                    self.load_detectors()
+                if not self.detectors[site_id]:
+                    self.load_detectors(site_id)
 
                 # Extract/convert audio data
                 audio_data = self.maybe_convert_wav(wav_bytes)
 
                 # Add to persistent buffer
-                self.audio_buffer += audio_data
+                self.audio_buffers[site_id] += audio_data
 
                 # Process in chunks.
                 # Any remaining audio data will be kept in buffer.
-                while len(self.audio_buffer) >= self.chunk_size:
-                    chunk = self.audio_buffer[: self.chunk_size]
-                    self.audio_buffer = self.audio_buffer[self.chunk_size :]
+                while len(self.audio_buffers[site_id]) >= self.chunk_size:
+                    chunk = self.audio_buffers[site_id][: self.chunk_size]
+                    self.audio_buffers[site_id] = self.audio_buffers[site_id][self.chunk_size :]
 
-                    for detector_index, detector in enumerate(self.detectors):
+                    for detector_index, detector in enumerate(self.detectors[site_id]):
                         # Return is:
                         # -2 silence
                         # -1 error
@@ -297,7 +301,7 @@ class WakeHermesMqtt(HermesClient):
                 )
 
                 if self.enabled:
-                    self.wav_queue.put((wav_bytes, site_id))
+                    self.wav_queues[site_id].put((wav_bytes, site_id))
         except Exception:
             _LOGGER.exception("udp_thread_proc")
 
@@ -323,7 +327,7 @@ class WakeHermesMqtt(HermesClient):
                 _LOGGER.debug("Still disabled: %s", self.disabled_reasons)
             else:
                 self.enabled = True
-                self.first_audio = True
+                self.first_audio[site_id] = True
                 _LOGGER.debug("Enabled")
         elif isinstance(message, HotwordToggleOff):
             self.enabled = False
