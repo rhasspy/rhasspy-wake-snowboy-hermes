@@ -139,7 +139,8 @@ def main():
         lang=args.lang,
     )
 
-    hermes.load_detectors()
+    for site_id in args.site_id:
+        hermes.load_detectors(site_id)
 
     _LOGGER.debug("Connecting to %s:%s", args.host, args.port)
     hermes_cli.connect(client, args)
