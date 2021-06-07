@@ -52,12 +52,27 @@ def main():
         action="append",
         help="Host/port/siteId for UDP audio input",
     )
+    parser.add_argument(
+        "--udp-raw-audio",
+        action="append",
+        help="Site id(s) where UDP audio is raw 16Khz 16-bit mono PCM instead of WAV chunks",
+    )
+    parser.add_argument(
+        "--udp-forward-mqtt",
+        action="append",
+        help="Site id(s) to forward audio to MQTT after detection",
+    )
     parser.add_argument("--lang", help="Set lang in hotword detected message")
 
     hermes_cli.add_hermes_args(parser)
     args = parser.parse_args()
 
+    # logging.basicConfig wouldn't work if a handler already existed.
+    # snowboy must mess with logging, so this resets it.
+    logging.getLogger().handlers = []
+
     hermes_cli.setup_logging(args)
+
     _LOGGER.debug(args)
 
     if args.model_dir:
@@ -135,14 +150,12 @@ def main():
         wakeword_ids,
         model_dirs=args.model_dir,
         udp_audio=udp_audio,
+        udp_raw_audio=args.udp_raw_audio,
+        udp_forward_mqtt=args.udp_forward_mqtt,
         site_ids=args.site_id,
         lang=args.lang,
     )
 
-    for site_id in args.site_id:
-        hermes.load_detectors(site_id)
-
-    _LOGGER.debug("Connecting to %s:%s", args.host, args.port)
     hermes_cli.connect(client, args)
 
     client.loop_start()
@@ -154,6 +167,7 @@ def main():
         pass
     finally:
         _LOGGER.debug("Shutting down")
+        hermes.stop()
         client.loop_stop()
 
 
