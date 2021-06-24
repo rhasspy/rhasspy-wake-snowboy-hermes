@@ -10,8 +10,6 @@ import wave
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from snowboy import snowboydecoder, snowboydetect
-
 from rhasspyhermes.audioserver import AudioFrame
 from rhasspyhermes.base import Message
 from rhasspyhermes.client import GeneratorType, HermesClient, TopicArgs
@@ -25,6 +23,7 @@ from rhasspyhermes.wake import (
     HotwordToggleOn,
     HotwordToggleReason,
 )
+from snowboy import snowboydecoder, snowboydetect
 
 WAV_HEADER_BYTES = 44
 _LOGGER = logging.getLogger("rhasspywake_snowboy_hermes")
